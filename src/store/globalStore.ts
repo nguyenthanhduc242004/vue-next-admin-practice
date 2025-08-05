@@ -5,7 +5,7 @@ import { ref } from 'vue';
 export const useGlobalStore = defineStore('global', () => {
   const isCollapse = ref(false);
   function toggleCollapse() {
-    this.isCollapse = !this.isCollapse;
+    isCollapse.value = !isCollapse.value;
   }
 
   return { isCollapse, toggleCollapse };
