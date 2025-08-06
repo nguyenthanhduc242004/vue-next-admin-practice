@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Search, FolderAdd, WarningFilled } from '@element-plus/icons-vue';
-import { reactive, ref } from 'vue';
+import { reactive, ref, watch } from 'vue';
 import { useDateFormat, useNow } from '@vueuse/core';
 import type { FormInstance, FormRules } from 'element-plus';
 
@@ -381,6 +381,11 @@ let nextNo = tableData.length + 1;
 // Search
 const filteredTableData = ref(tableData);
 const searchInput = ref('');
+watch(searchInput, () => {
+  if (!searchInput.value) {
+    handleInputBtnClick();
+  }
+});
 const handleInputBtnClick = () => {
   const input = searchInput.value.trim().toLowerCase();
   filteredTableData.value = tableData.filter((data) => {
