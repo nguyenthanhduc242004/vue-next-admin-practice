@@ -33,7 +33,7 @@ const handleMenuSelect = (key: string) => {
     background-color="#545c64"
     text-color="#eaeaea"
     active-text-color="#409eff"
-    :default-active="1"
+    default-active="1"
     @select="handleMenuSelect"
   >
     <el-menu-item index="1">

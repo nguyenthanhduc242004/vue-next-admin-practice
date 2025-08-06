@@ -80,7 +80,7 @@ watch(route, (newRoute) => {
             width="25"
             height="25"
             alt="avatar"
-            src="../../public/imgs/avatar.jpg"
+            src="/imgs/avatar.jpg"
           />
           <span>admin</span>
           <el-icon class="!ml-[5px]"><ArrowDown /></el-icon>

@@ -14,7 +14,7 @@ import Header from './layout/Header.vue';
         <el-header style="--el-header-padding: 0; --el-header-height: auto">
           <Header />
         </el-header>
-        <el-main><RouterView /></el-main>
+        <el-main style="--el-main-padding: 15px"><RouterView /></el-main>
       </el-container>
     </el-container>
   </div>
