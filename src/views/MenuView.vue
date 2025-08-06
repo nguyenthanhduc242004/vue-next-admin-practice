@@ -678,34 +678,40 @@ const handleDeleteConfirmBtnClick = () => {
     align-center
     destroy-on-close
   >
-    <el-form ref="ruleFormRef" style="width: 100%; padding: 0 4px" :model="ruleForm" :rules="rules" label-width="auto">
+    <el-form
+      ref="ruleFormRef"
+      style="width: 100%; padding: 0 4px 14px"
+      :model="ruleForm"
+      :rules="rules"
+      label-width="auto"
+    >
       <el-row>
         <el-col :span="12">
-          <el-form-item label="Name" prop="name">
+          <el-form-item label="Name" prop="name" class="form-item">
             <el-input clearable placeholder="Please enter a name" v-model="ruleForm.name" />
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="Role" prop="role">
+          <el-form-item label="Role" prop="role" class="form-item">
             <el-input clearable placeholder="Please enter a role" v-model="ruleForm.role" />
           </el-form-item>
         </el-col>
       </el-row>
       <el-row>
         <el-col :span="12">
-          <el-form-item label="Type" prop="type">
+          <el-form-item label="Type" prop="type" class="form-item">
             <el-input-number v-model="ruleForm.type" :min="0" controls-position="right" />
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="Status" prop="status">
+          <el-form-item label="Status" prop="status" class="form-item">
             <el-switch v-model="ruleForm.status" inline-prompt active-text="Active " inactive-text="Disabled" />
           </el-form-item>
         </el-col>
       </el-row>
       <el-row>
         <el-col :span="24">
-          <el-form-item label="Description" prop="description">
+          <el-form-item label="Description" prop="description" class="form-item">
             <el-input
               v-model="ruleForm.description"
               :rows="2"
@@ -718,7 +724,7 @@ const handleDeleteConfirmBtnClick = () => {
       </el-row>
       <el-row>
         <el-col :span="24">
-          <el-form-item label="Options">
+          <el-form-item label="Options" class="form-item">
             <el-tree-select
               v-model="optionsInput"
               :data="optionsData"
@@ -774,5 +780,9 @@ const handleDeleteConfirmBtnClick = () => {
 
 .el-button + .el-button {
   margin-left: 10px;
+}
+
+.form-item {
+  margin-bottom: 20px;
 }
 </style>
