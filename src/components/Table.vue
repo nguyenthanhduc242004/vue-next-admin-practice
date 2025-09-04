@@ -1,58 +1,25 @@
 <!-- eslint-disable vue/multi-word-component-names -->
+<!-- eslint-disable @typescript-eslint/no-explicit-any -->
 <script lang="ts" setup>
 import { onMounted, ref, watch } from 'vue';
-import TableColumn, { type TableColumnProps } from './TableColumn.vue';
 import axios from 'axios';
-import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
-import { WarningFilled } from '@element-plus/icons-vue';
-import FormItem, { type FormItemProps } from './FormItem.vue';
-import {
-    BE_URL,
-    convertToUtc0IsoString,
-    createObjectURL,
-    getFullImageUrlPath,
-    removeItemByIndex,
-    splitCamelCase,
-} from '@/utils';
+import { ElMessage } from 'element-plus';
+import { BE_URL, createObjectURL, getFullImageUrlPath } from '@/utils';
 
 interface TableProps {
-    tableColumnPropsList: TableColumnProps[];
     api?: string;
     searchedString?: string;
-
-    formItemPropsList?: FormItemProps[];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    formRules?: FormRules<any>;
-    deleteConfirmText?: string;
-    replaceConfirmText?: string;
     hasPagination?: boolean;
     hasBorder?: boolean;
-    fontSize?: string;
-    primaryKey?: string[];
-    formWidth?: string;
-
-    autocompleteDataUrl?: string;
-
-    fetchIdProp?: string;
-    fetchId?: string | number | null;
-    fetchUrl?: string;
-
     height?: string;
-    preventDestroyDialogOnClose?: boolean;
+    fontSize?: string;
 }
-const props = defineProps<TableProps>();
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const ruleForm = defineModel<any>('ruleForm');
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const deletingObject = defineModel<any>('deletingObject');
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const tableData = defineModel<any[]>('tableData', {
-    default: () => [],
+const props = withDefaults(defineProps<TableProps>(), {
+    hasPagination: true,
+    height: '100%',
+    fontSize: '14px',
 });
-if (tableData.value === undefined || tableData.value === null) {
-    tableData.value = [];
-}
-const ruleFormRef = defineModel<FormInstance | undefined>('ruleFormRef');
+const tableData = ref([]);
 
 // Table
 const isTableDataLoading = ref(!!props.api);
@@ -62,11 +29,6 @@ const total = ref(0);
 const sortingField = ref<string | null>(null);
 const sortingOrder = ref<string | null>(null);
 const filteredStatus = ref<boolean | null>(null);
-
-const indexToReplace = ref<number | null>(null);
-const indexToEdit = ref<number | null>(null);
-
-const title = ref('Add');
 
 const getData = () => {
     if (props.hasPagination) {
@@ -144,13 +106,11 @@ watch(
     },
 );
 
-// Form
-const isAdding = ref(false);
-const addAndEditDialogVisible = ref(false);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const edittingObject = ref<any>(null);
-const deleteDialogVisible = ref(false);
-const replaceDialogVisible = ref(false);
+// const isAdding = ref(false);
+// const addAndEditDialogVisible = ref(false);
+// const edittingObject = ref<any>(null);
+// const deleteDialogVisible = ref(false);
+// const replaceDialogVisible = ref(false);
 
 // Image Preview
 const imagePreviewDialogVisible = ref(false);
@@ -163,258 +123,262 @@ const previewImage = (src: string | File) => {
 };
 
 // Add/Edit/Delete
-const openAddModal = () => {
-    if (props.fetchUrl) {
-        if (props.fetchId) {
-            axios.get(props.fetchUrl + '/' + props.fetchId).then((response) => {
-                if (response.data.code === 200) {
-                    if (response.data.result.length >= 1) {
-                        handleOpenAddModalLogic();
-                    } else {
-                        ElMessage.error(
-                            splitCamelCase(props.fetchIdProp ?? '') +
-                                " does not exist or doesn't supply any products!",
-                        );
-                    }
-                } else {
-                    ElMessage.error('Error fetching data: ' + response.data.error);
-                }
-            });
-        } else {
-            ElMessage.error(splitCamelCase(props.fetchIdProp ?? '') + ' cannot be empty!');
-        }
-    } else {
-        handleOpenAddModalLogic();
-    }
-};
+// const openAddModal = () => {
+//     if (props.fetchUrl) {
+//         if (props.fetchId) {
+//             axios.get(props.fetchUrl + '/' + props.fetchId).then((response) => {
+//                 if (response.data.code === 200) {
+//                     if (response.data.result.length >= 1) {
+//                         handleOpenAddModalLogic();
+//                     } else {
+//                         ElMessage.error(
+//                             splitCamelCase(props.fetchIdProp ?? '') +
+//                                 " does not exist or doesn't supply any products!",
+//                         );
+//                     }
+//                 } else {
+//                     ElMessage.error('Error fetching data: ' + response.data.error);
+//                 }
+//             });
+//         } else {
+//             ElMessage.error(splitCamelCase(props.fetchIdProp ?? '') + ' cannot be empty!');
+//         }
+//     } else {
+//         handleOpenAddModalLogic();
+//     }
+// };
 
-const handleOpenAddModalLogic = () => {
-    if (props.formItemPropsList) {
-        addAndEditDialogVisible.value = true;
-        edittingObject.value = null;
-        title.value = 'Add';
+// const handleOpenAddModalLogic = () => {
+//     if (props.formItemPropsList) {
+//         addAndEditDialogVisible.value = true;
+//         edittingObject.value = null;
+//         title.value = 'Add';
 
-        if (!isAdding.value) {
-            props.formItemPropsList.forEach((item) => {
-                ruleForm.value[item.prop] = item.type === 'status' ? true : null;
-            });
-        }
+//         if (!isAdding.value) {
+//             props.formItemPropsList.forEach((item) => {
+//                 ruleForm.value[item.prop] = item.type === 'status' ? true : null;
+//             });
+//         }
 
-        isAdding.value = true;
-    }
-};
+//         isAdding.value = true;
+//     }
+// };
 
-const handleSubmitForm = async (formEl: FormInstance | undefined) => {
-    if (!formEl) return;
-    await formEl.validate((valid) => {
-        if (valid) {
-            const tableFormItemProps = props.formItemPropsList?.find(
-                (item) => item.type === 'table',
-            );
-            if (tableFormItemProps && ruleForm.value[tableFormItemProps.prop].length === 0) {
-                ElMessage.error('Please add a ' + tableFormItemProps.tableDataName);
-                return;
-            }
-            addOrEditData();
-        } else {
-            return;
-        }
-    });
-};
+// const handleSubmitForm = async (formEl: FormInstance | undefined) => {
+//     if (!formEl) return;
+//     await formEl.validate((valid) => {
+//         if (valid) {
+//             const tableFormItemProps = props.formItemPropsList?.find(
+//                 (item) => item.type === 'table',
+//             );
+//             if (tableFormItemProps && ruleForm.value[tableFormItemProps.prop].length === 0) {
+//                 ElMessage.error('Please add a ' + tableFormItemProps.tableDataName);
+//                 return;
+//             }
+//             addOrEditData();
+//         } else {
+//             return;
+//         }
+//     });
+// };
 
-const addOrEditData = async () => {
-    if (props.formItemPropsList) {
-        addAndEditDialogVisible.value = false;
-        isTableDataLoading.value = true;
+// const addOrEditData = async () => {
+//     if (props.formItemPropsList) {
+//         addAndEditDialogVisible.value = false;
+//         isTableDataLoading.value = true;
 
-        if (props.api) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            let data: any;
-            if (props.formItemPropsList.some((item) => item.type === 'image' && !item.disabled)) {
-                data = new FormData();
+//         if (props.api) {
+//             // eslint-disable-next-line @typescript-eslint/no-explicit-any
+//             let data: any;
+//             if (props.formItemPropsList.some((item) => item.type === 'image' && !item.disabled)) {
+//                 data = new FormData();
 
-                data.append('ID', edittingObject.value.ID);
-                props.formItemPropsList.forEach((item) => {
-                    if (item.type === 'date')
-                        data.append(item.prop, convertToUtc0IsoString(ruleForm.value[item.prop]));
-                    else data.append(item.prop, ruleForm.value[item.prop]);
-                });
-            } else {
-                data = { ID: edittingObject.value?.ID };
-                props.formItemPropsList.forEach((item) => {
-                    // TODO: if use DateString: Add here
-                    if (item.type === 'date')
-                        data[item.prop] = convertToUtc0IsoString(ruleForm.value[item.prop]);
-                    else if (item.type === 'table') {
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        data[item.prop] = ruleForm.value[item.prop].map((productBatch: any) => {
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            const temp: Record<string, any> = {};
-                            for (const [key, value] of Object.entries(productBatch)) {
-                                if (value instanceof Date)
-                                    temp[key] = convertToUtc0IsoString(value);
-                                else temp[key] = value;
-                            }
-                            return temp;
-                        });
-                    } else data[item.prop] = ruleForm.value[item.prop];
-                });
-            }
+//                 data.append('ID', edittingObject.value.ID);
+//                 props.formItemPropsList.forEach((item) => {
+//                     if (item.type === 'date')
+//                         data.append(item.prop, convertToUtc0IsoString(ruleForm.value[item.prop]));
+//                     else data.append(item.prop, ruleForm.value[item.prop]);
+//                 });
+//             } else {
+//                 data = { ID: edittingObject.value?.ID };
+//                 props.formItemPropsList.forEach((item) => {
+//                     // TODO: if use DateString: Add here
+//                     if (item.type === 'date')
+//                         data[item.prop] = convertToUtc0IsoString(ruleForm.value[item.prop]);
+//                     else if (item.type === 'table') {
+//                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
+//                         data[item.prop] = ruleForm.value[item.prop].map((productBatch: any) => {
+//                             // eslint-disable-next-line @typescript-eslint/no-explicit-any
+//                             const temp: Record<string, any> = {};
+//                             for (const [key, value] of Object.entries(productBatch)) {
+//                                 if (value instanceof Date)
+//                                     temp[key] = convertToUtc0IsoString(value);
+//                                 else temp[key] = value;
+//                             }
+//                             return temp;
+//                         });
+//                     } else data[item.prop] = ruleForm.value[item.prop];
+//                 });
+//             }
 
-            if (edittingObject.value) {
-                axios
-                    .post(props.api + '/update', data)
-                    .then((response) => {
-                        if (response.data.code === 200) {
-                            getPageData();
-                            console.log(response.data);
-                            ElMessage.success('Edit data successfully');
-                        } else ElMessage.error('Error editting data: ' + response.data.message);
-                    })
-                    .catch((error) => {
-                        ElMessage.error('Error editting data: ' + error);
-                    })
-                    .finally(() => {
-                        isTableDataLoading.value = false;
-                        edittingObject.value = null;
-                    });
-            } else if (isAdding.value) {
-                axios
-                    .post(props.api + '/add', data)
-                    .then((response) => {
-                        if (response.data.code === 200) {
-                            getPageData();
-                            console.log(response.data);
-                            isAdding.value = false;
-                            ElMessage.success('Add data successfully');
-                        } else ElMessage.error('Error adding data: ' + response.data.message);
-                    })
-                    .catch((error) => {
-                        ElMessage.error('Error adding data: ' + error);
-                    })
-                    .finally(() => {
-                        isTableDataLoading.value = false;
-                    });
-            }
-        } else {
-            indexToReplace.value = tableData.value.findIndex((tableDataItem) => {
-                return props.primaryKey?.every((prop) => {
-                    if (tableDataItem[prop] instanceof Date) {
-                        return (
-                            tableDataItem[prop].toISOString() === ruleForm.value[prop].toISOString()
-                        );
-                    }
-                    return tableDataItem[prop] === ruleForm.value[prop];
-                });
-            });
-            if (edittingObject.value) {
-                indexToEdit.value = tableData.value.findIndex((tableDataItem) => {
-                    return props.primaryKey?.every((prop) => {
-                        if (tableDataItem[prop] instanceof Date) {
-                            return (
-                                tableDataItem[prop].toISOString() ===
-                                edittingObject.value[prop].toISOString()
-                            );
-                        }
-                        return tableDataItem[prop] === edittingObject.value[prop];
-                    });
-                });
-                if (indexToReplace.value === -1) {
-                    tableData.value[indexToEdit.value] = { ...ruleForm.value };
-                } else {
-                    const hasPrimaryKeyValueChanged = props.primaryKey?.some((prop) => {
-                        if (edittingObject.value[prop] instanceof Date) {
-                            return (
-                                edittingObject.value[prop].toISOString() !==
-                                ruleForm.value[prop].toISOString()
-                            );
-                        }
-                        return edittingObject.value[prop] !== ruleForm.value[prop];
-                    });
-                    if (hasPrimaryKeyValueChanged) {
-                        // Hiện dialog hỏi replace
-                        replaceDialogVisible.value = true;
-                    } else {
-                        tableData.value[indexToReplace.value] = { ...ruleForm.value };
-                    }
-                }
+//             if (edittingObject.value) {
+//                 axios
+//                     .post(props.api + '/update', data)
+//                     .then((response) => {
+//                         if (response.data.code === 200) {
+//                             getPageData();
+//                             console.log(response.data);
+//                             ElMessage.success('Edit data successfully');
+//                         } else ElMessage.error('Error editting data: ' + response.data.message);
+//                     })
+//                     .catch((error) => {
+//                         ElMessage.error('Error editting data: ' + error);
+//                     })
+//                     .finally(() => {
+//                         isTableDataLoading.value = false;
+//                         edittingObject.value = null;
+//                     });
+//             } else if (isAdding.value) {
+//                 axios
+//                     .post(props.api + '/add', data)
+//                     .then((response) => {
+//                         if (response.data.code === 200) {
+//                             getPageData();
+//                             console.log(response.data);
+//                             isAdding.value = false;
+//                             ElMessage.success('Add data successfully');
+//                         } else ElMessage.error('Error adding data: ' + response.data.message);
+//                     })
+//                     .catch((error) => {
+//                         ElMessage.error('Error adding data: ' + error);
+//                     })
+//                     .finally(() => {
+//                         isTableDataLoading.value = false;
+//                     });
+//             }
+//         } else {
+//             indexToReplace.value = tableData.value.findIndex((tableDataItem) => {
+//                 return props.primaryKey?.every((prop) => {
+//                     if (tableDataItem[prop] instanceof Date) {
+//                         return (
+//                             tableDataItem[prop].toISOString() === ruleForm.value[prop].toISOString()
+//                         );
+//                     }
+//                     return tableDataItem[prop] === ruleForm.value[prop];
+//                 });
+//             });
+//             if (edittingObject.value) {
+//                 indexToEdit.value = tableData.value.findIndex((tableDataItem) => {
+//                     return props.primaryKey?.every((prop) => {
+//                         if (tableDataItem[prop] instanceof Date) {
+//                             return (
+//                                 tableDataItem[prop].toISOString() ===
+//                                 edittingObject.value[prop].toISOString()
+//                             );
+//                         }
+//                         return tableDataItem[prop] === edittingObject.value[prop];
+//                     });
+//                 });
+//                 if (indexToReplace.value === -1) {
+//                     tableData.value[indexToEdit.value] = { ...ruleForm.value };
+//                 } else {
+//                     const hasPrimaryKeyValueChanged = props.primaryKey?.some((prop) => {
+//                         if (edittingObject.value[prop] instanceof Date) {
+//                             return (
+//                                 edittingObject.value[prop].toISOString() !==
+//                                 ruleForm.value[prop].toISOString()
+//                             );
+//                         }
+//                         return edittingObject.value[prop] !== ruleForm.value[prop];
+//                     });
+//                     if (hasPrimaryKeyValueChanged) {
+//                         // Hiện dialog hỏi replace
+//                         replaceDialogVisible.value = true;
+//                     } else {
+//                         tableData.value[indexToReplace.value] = { ...ruleForm.value };
+//                     }
+//                 }
 
-                edittingObject.value = null;
-            } else if (isAdding.value) {
-                if (indexToReplace.value === -1) {
-                    tableData.value.push({ ...ruleForm.value });
-                } else {
-                    // Hiện dialog hỏi replace
-                    replaceDialogVisible.value = true;
-                }
-                isAdding.value = false;
-            }
-            isTableDataLoading.value = false;
-        }
-    }
-};
+//                 edittingObject.value = null;
+//             } else if (isAdding.value) {
+//                 if (indexToReplace.value === -1) {
+//                     tableData.value.push({ ...ruleForm.value });
+//                 } else {
+//                     // Hiện dialog hỏi replace
+//                     replaceDialogVisible.value = true;
+//                 }
+//                 isAdding.value = false;
+//             }
+//             isTableDataLoading.value = false;
+//         }
+//     }
+// };
 
-const handleDeleteConfirmBtnClick = () => {
-    deleteDialogVisible.value = false;
-    isTableDataLoading.value = true;
-    deleteData();
-};
+// const handleDeleteConfirmBtnClick = () => {
+//     deleteDialogVisible.value = false;
+//     isTableDataLoading.value = true;
+//     deleteData();
+// };
 
-const handleReplaceConfirmBtnClick = () => {
-    replaceDialogVisible.value = false;
-    isTableDataLoading.value = true;
+// const handleReplaceConfirmBtnClick = () => {
+//     replaceDialogVisible.value = false;
+//     isTableDataLoading.value = true;
 
-    if (indexToReplace.value !== null && indexToReplace.value >= 0) {
-        tableData.value[indexToReplace.value] = { ...ruleForm.value };
-        indexToReplace.value = null;
-    }
-    if (indexToEdit.value !== null && indexToEdit.value >= 0) {
-        removeItemByIndex(tableData.value, indexToEdit.value);
-        indexToEdit.value = null;
-    }
+//     if (indexToReplace.value !== null && indexToReplace.value >= 0) {
+//         tableData.value[indexToReplace.value] = { ...ruleForm.value };
+//         indexToReplace.value = null;
+//     }
+//     if (indexToEdit.value !== null && indexToEdit.value >= 0) {
+//         removeItemByIndex(tableData.value, indexToEdit.value);
+//         indexToEdit.value = null;
+//     }
 
-    isTableDataLoading.value = false;
-};
+//     isTableDataLoading.value = false;
+// };
 
-const deleteData = () => {
-    if (props.api) {
-        axios
-            .post(props.api + '/soft-delete', {
-                ID: deletingObject.value.ID,
-            })
-            .then((response) => {
-                if (response.data.code === 200) {
-                    getPageData();
-                    console.log(response.data);
-                    ElMessage.success('Delete data successfully');
-                } else ElMessage.error('Error deleting data: ' + response.data.message);
-            })
-            .catch((error) => {
-                ElMessage.error('Error deleting data: ' + error);
-            })
-            .finally(() => {
-                isTableDataLoading.value = false;
-                deletingObject.value = null;
-            });
-    } else {
-        const indexToRemove = tableData.value.findIndex((tableDataItem) => {
-            return props.primaryKey?.every((prop) => {
-                if (tableDataItem[prop] instanceof Date) {
-                    return (
-                        tableDataItem[prop].toISOString() ===
-                        deletingObject.value[prop].toISOString()
-                    );
-                }
-                return tableDataItem[prop] === deletingObject.value[prop];
-            });
-        });
-        removeItemByIndex(tableData.value, indexToRemove);
-        isTableDataLoading.value = false;
-    }
-};
+// const deleteData = () => {
+//     if (props.api) {
+//         axios
+//             .post(props.api + '/soft-delete', {
+//                 ID: deletingObject.value.ID,
+//             })
+//             .then((response) => {
+//                 if (response.data.code === 200) {
+//                     getPageData();
+//                     console.log(response.data);
+//                     ElMessage.success('Delete data successfully');
+//                 } else ElMessage.error('Error deleting data: ' + response.data.message);
+//             })
+//             .catch((error) => {
+//                 ElMessage.error('Error deleting data: ' + error);
+//             })
+//             .finally(() => {
+//                 isTableDataLoading.value = false;
+//                 deletingObject.value = null;
+//             });
+//     } else {
+//         const indexToRemove = tableData.value.findIndex((tableDataItem) => {
+//             return props.primaryKey?.every((prop) => {
+//                 if (tableDataItem[prop] instanceof Date) {
+//                     return (
+//                         tableDataItem[prop].toISOString() ===
+//                         deletingObject.value[prop].toISOString()
+//                     );
+//                 }
+//                 return tableDataItem[prop] === deletingObject.value[prop];
+//             });
+//         });
+//         removeItemByIndex(tableData.value, indexToRemove);
+//         isTableDataLoading.value = false;
+//     }
+// };
 
 defineExpose({
-    openAddModal,
+    previewImage,
+    getPageData,
+    setLoading: (loading: boolean) => {
+        isTableDataLoading.value = loading;
+    },
 });
 </script>
 
@@ -423,7 +387,7 @@ defineExpose({
         v-loading="isTableDataLoading"
         :data="tableData"
         size="large"
-        :height="height ? height : '100%'"
+        :height="height"
         stripe
         :border="hasBorder"
         :style="{
@@ -447,7 +411,8 @@ defineExpose({
             }
         "
     >
-        <TableColumn
+        <slot></slot>
+        <!-- <TableColumn
             v-for="(item, index) in tableColumnPropsList"
             :key="index"
             :type="item.type"
@@ -486,7 +451,7 @@ defineExpose({
                     deleteDialogVisible = true;
                 }
             "
-        />
+        /> -->
     </el-table>
 
     <!-- pagination-wrapper -->
@@ -502,7 +467,7 @@ defineExpose({
     </div>
 
     <!-- Add and Edit dialog -->
-    <el-dialog
+    <!-- <el-dialog
         v-model="addAndEditDialogVisible"
         :title="title"
         :width="formWidth ?? '50%'"
@@ -582,10 +547,10 @@ defineExpose({
                 </el-button>
             </div>
         </template>
-    </el-dialog>
+    </el-dialog> -->
 
     <!-- Delete dialog -->
-    <el-dialog
+    <!-- <el-dialog
         v-model="deleteDialogVisible"
         title="Delete"
         align-center
@@ -607,10 +572,10 @@ defineExpose({
                 <el-button type="primary" @click="handleDeleteConfirmBtnClick"> Confirm </el-button>
             </div>
         </template>
-    </el-dialog>
+    </el-dialog> -->
 
     <!-- Replace Dialog -->
-    <el-dialog v-model="replaceDialogVisible" title="Replace" align-center width="500">
+    <!-- <el-dialog v-model="replaceDialogVisible" title="Replace" align-center width="500">
         <div style="display: flex; align-items: center">
             <el-icon size="24" color="#e6a23c"><WarningFilled /></el-icon>
             <span style="margin: 0 12px">{{ replaceConfirmText }}</span>
@@ -623,7 +588,7 @@ defineExpose({
                 </el-button>
             </div>
         </template>
-    </el-dialog>
+    </el-dialog> -->
 
     <!-- Image preview dialog -->
     <el-dialog

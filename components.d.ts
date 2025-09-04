@@ -9,6 +9,8 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     AddAndEditForm: typeof import('./src/components/AddAndEditForm.vue')['default']
+    ConfirmDialog: typeof import('./src/components/ConfirmDialog.vue')['default']
+    copy: typeof import('./src/components/ConfirmDialog copy.vue')['default']
     ElAside: typeof import('element-plus/es')['ElAside']
     ElAutocomplete: typeof import('element-plus/es')['ElAutocomplete']
     ElAutoResizer: typeof import('element-plus/es')['ElAutoResizer']
@@ -46,6 +48,7 @@ declare module 'vue' {
     ElTreeSelect: typeof import('element-plus/es')['ElTreeSelect']
     ElUpload: typeof import('element-plus/es')['ElUpload']
     Form: typeof import('./src/components/Form.vue')['default']
+    FormDialog: typeof import('./src/components/FormDialog.vue')['default']
     FormItem: typeof import('./src/components/FormItem.vue')['default']
     HelloWorld: typeof import('./src/components/HelloWorld.vue')['default']
     IconCommunity: typeof import('./src/components/icons/IconCommunity.vue')['default']
@@ -56,6 +59,7 @@ declare module 'vue' {
     ListView: typeof import('./src/components/ListView.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    StaffView: typeof import('./src/components/StaffView.vue')['default']
     Table: typeof import('./src/components/Table.vue')['default']
     TableColumn: typeof import('./src/components/TableColumn.vue')['default']
     TheWelcome: typeof import('./src/components/TheWelcome.vue')['default']

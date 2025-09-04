@@ -1,4 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { FormItemProps } from '@/components/FormItem.vue';
+import axios from 'axios';
+import { ElMessage } from 'element-plus';
 
 export const capitalizeFirstLetter = (val: string) => {
     return String(val).charAt(0).toUpperCase() + String(val).slice(1);
@@ -123,7 +126,6 @@ export const convertToUtc0IsoString = (stringOrDate: string | Date | null) => {
     return dobString;
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const removeItemByIndex = (array: any[], index: number) => {
     if (index > -1 && index < array.length) {
         array.splice(index, 1);
@@ -146,14 +148,12 @@ export type GenerateFormInterface<T extends FormItemProps[]> = {
             : K['dataType'] extends 'image'
               ? string | File | null
               : K['dataType'] extends 'table'
-                ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  any[] | null
+                ? any[] | null
                 : string | null;
 };
 export const createEmptyRuleForm = <T extends FormItemProps[]>(
     columns: T,
 ): GenerateFormInterface<T> => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const form: any = {};
     if (columns) {
         columns.forEach((column) => {
@@ -231,3 +231,214 @@ const isSpecialCase = (key: string): key is keyof SpecialCases => {
         }
     );
 };
+
+export const isEmptyObject = (obj: unknown): boolean => {
+    return (
+        obj !== null &&
+        typeof obj === 'object' &&
+        !Array.isArray(obj) &&
+        Object.keys(obj).length === 0
+    );
+};
+
+export const addOrEditData = async (
+    ID: string | number,
+    data: Record<string, any>,
+    isEditting: boolean,
+    containImage: boolean,
+    api: string,
+    onSuccess: () => void,
+    onFinally: () => void,
+) => {
+    let finalData: any;
+    if (containImage) {
+        finalData = new FormData();
+        finalData.append('ID', ID);
+        for (const key in data) {
+            if (data[key] instanceof Date) {
+                finalData.append(key, convertToUtc0IsoString(data[key]));
+            } else {
+                finalData.append(key, data[key] ?? '');
+            }
+        }
+    } else {
+        finalData.ID = ID;
+        for (const key in data) {
+            if (data[key] instanceof Date) {
+                finalData[key] = convertToUtc0IsoString(data[key]);
+            } else {
+                finalData[key] = data[key];
+            }
+        }
+    }
+
+    await axios
+        .post(api + '/' + (isEditting ? 'update' : 'add'), finalData)
+        .then((response) => {
+            if (response.data.code === 200) {
+                onSuccess();
+                console.log(response.data);
+                ElMessage.success(`${isEditting ? 'Edit' : 'Add'} data successfully`);
+            } else ElMessage.error('Error adding data: ' + response.data.message);
+        })
+        .catch((error) => {
+            ElMessage.error('Error adding data: ' + error);
+        })
+        .finally(() => {
+            onFinally();
+        });
+};
+
+export const deleteData = async (
+    ID: string | number,
+    api: string,
+    onSuccess: () => void,
+    onFinally: () => void,
+) => {
+    axios
+        .post(api + '/soft-delete', {
+            ID: ID,
+        })
+        .then((response) => {
+            if (response.data.code === 200) {
+                onSuccess();
+                console.log(response.data);
+                ElMessage.success('Delete data successfully');
+            } else ElMessage.error('Error deleting data: ' + response.data.message);
+        })
+        .catch((error) => {
+            ElMessage.error('Error deleting data: ' + error);
+        })
+        .finally(() => {
+            onFinally();
+        });
+};
+
+// const addOrEditData = async () => {
+//     if (props.formItemPropsList) {
+//         addAndEditDialogVisible.value = false;
+//         isTableDataLoading.value = true;
+
+//         if (props.api) {
+//             let data: any;
+//             if (props.formItemPropsList.some((item) => item.type === 'image' && !item.disabled)) {
+//                 data = new FormData();
+
+//                 data.append('ID', edittingObject.value.ID);
+//                 props.formItemPropsList.forEach((item) => {
+//                     if (item.type === 'date')
+//                         data.append(item.prop, convertToUtc0IsoString(ruleForm.value[item.prop]));
+//                     else data.append(item.prop, ruleForm.value[item.prop]);
+//                 });
+//             } else {
+//                 data = { ID: edittingObject.value?.ID };
+//                 props.formItemPropsList.forEach((item) => {
+//                     // TODO: if use DateString: Add here
+//                     if (item.type === 'date')
+//                         data[item.prop] = convertToUtc0IsoString(ruleForm.value[item.prop]);
+//                     else if (item.type === 'table') {
+//                         data[item.prop] = ruleForm.value[item.prop].map((productBatch: any) => {
+//                             const temp: Record<string, any> = {};
+//                             for (const [key, value] of Object.entries(productBatch)) {
+//                                 if (value instanceof Date)
+//                                     temp[key] = convertToUtc0IsoString(value);
+//                                 else temp[key] = value;
+//                             }
+//                             return temp;
+//                         });
+//                     } else data[item.prop] = ruleForm.value[item.prop];
+//                 });
+//             }
+
+//             if (edittingObject.value) {
+//                 axios
+//                     .post(props.api + '/update', data)
+//                     .then((response) => {
+//                         if (response.data.code === 200) {
+//                             getPageData();
+//                             console.log(response.data);
+//                             ElMessage.success('Edit data successfully');
+//                         } else ElMessage.error('Error editting data: ' + response.data.message);
+//                     })
+//                     .catch((error) => {
+//                         ElMessage.error('Error editting data: ' + error);
+//                     })
+//                     .finally(() => {
+//                         isTableDataLoading.value = false;
+//                         edittingObject.value = null;
+//                     });
+//             } else if (isAdding.value) {
+//                 axios
+//                     .post(props.api + '/add', data)
+//                     .then((response) => {
+//                         if (response.data.code === 200) {
+//                             getPageData();
+//                             console.log(response.data);
+//                             isAdding.value = false;
+//                             ElMessage.success('Add data successfully');
+//                         } else ElMessage.error('Error adding data: ' + response.data.message);
+//                     })
+//                     .catch((error) => {
+//                         ElMessage.error('Error adding data: ' + error);
+//                     })
+//                     .finally(() => {
+//                         isTableDataLoading.value = false;
+//                     });
+//             }
+//         } else {
+//             indexToReplace.value = tableData.value.findIndex((tableDataItem) => {
+//                 return props.primaryKey?.every((prop) => {
+//                     if (tableDataItem[prop] instanceof Date) {
+//                         return (
+//                             tableDataItem[prop].toISOString() === ruleForm.value[prop].toISOString()
+//                         );
+//                     }
+//                     return tableDataItem[prop] === ruleForm.value[prop];
+//                 });
+//             });
+//             if (edittingObject.value) {
+//                 indexToEdit.value = tableData.value.findIndex((tableDataItem) => {
+//                     return props.primaryKey?.every((prop) => {
+//                         if (tableDataItem[prop] instanceof Date) {
+//                             return (
+//                                 tableDataItem[prop].toISOString() ===
+//                                 edittingObject.value[prop].toISOString()
+//                             );
+//                         }
+//                         return tableDataItem[prop] === edittingObject.value[prop];
+//                     });
+//                 });
+//                 if (indexToReplace.value === -1) {
+//                     tableData.value[indexToEdit.value] = { ...ruleForm.value };
+//                 } else {
+//                     const hasPrimaryKeyValueChanged = props.primaryKey?.some((prop) => {
+//                         if (edittingObject.value[prop] instanceof Date) {
+//                             return (
+//                                 edittingObject.value[prop].toISOString() !==
+//                                 ruleForm.value[prop].toISOString()
+//                             );
+//                         }
+//                         return edittingObject.value[prop] !== ruleForm.value[prop];
+//                     });
+//                     if (hasPrimaryKeyValueChanged) {
+//                         // Hiện dialog hỏi replace
+//                         replaceDialogVisible.value = true;
+//                     } else {
+//                         tableData.value[indexToReplace.value] = { ...ruleForm.value };
+//                     }
+//                 }
+
+//                 edittingObject.value = null;
+//             } else if (isAdding.value) {
+//                 if (indexToReplace.value === -1) {
+//                     tableData.value.push({ ...ruleForm.value });
+//                 } else {
+//                     // Hiện dialog hỏi replace
+//                     replaceDialogVisible.value = true;
+//                 }
+//                 isAdding.value = false;
+//             }
+//             isTableDataLoading.value = false;
+//         }
+//     }
+// };

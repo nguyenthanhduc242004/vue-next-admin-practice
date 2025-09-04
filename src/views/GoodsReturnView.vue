@@ -6,6 +6,8 @@ import { BE_URL, createEmptyRuleForm, imagePlaceholder, type GenerateFormInterfa
 import type { TableColumnProps } from '@/components/TableColumn.vue';
 import type { FormItemProps } from '@/components/FormItem.vue';
 import Table from '@/components/Table.vue';
+import TableColumn from '@/components/TableColumn.vue';
+import ConfirmDialog from '@/components/ConfirmDialog.vue';
 
 const tableColumnPropsList: TableColumnProps[] = [
     {
@@ -235,6 +237,8 @@ watch(searchInput, () => {
 const handleInputBtnClick = () => {
     searchedString.value = searchInput.value.trim().toLowerCase();
 };
+
+const deleteDialog = ref();
 </script>
 
 <template>
@@ -254,7 +258,6 @@ const handleInputBtnClick = () => {
 
     <Table
         ref="tableRef"
-        :table-column-props-list="tableColumnPropsList"
         :api="BE_URL + '/api/goods-return'"
         :form-item-props-list="formItemPropsList"
         v-model:rule-form="ruleForm"
@@ -264,5 +267,48 @@ const handleInputBtnClick = () => {
         form-width="68%"
         :searched-string="searchedString"
         prevent-destroy-dialog-on-close
-    />
+    >
+        <TableColumn
+            v-for="(item, index) in tableColumnPropsList"
+            :key="index"
+            :type="item.type"
+            :prop="item.prop"
+            :label="item.label"
+            :image-width="item.imageWidth"
+            :image-height="item.imageHeight"
+            :imageFit="item.imageFit"
+            :imagePlaceholder="item.imagePlaceholder"
+            :active-text="item.activeText"
+            :inactive-text="item.inactiveText"
+            :expand-heading="item.expandHeading"
+            :expand-data-url="item.expandDataUrl"
+            :expand-table-column-props-list="item.expandTableColumnPropsList"
+            :expand-table-font-size="item.expandTableFontSize"
+            @image-click="
+                (src) => {
+                    tableRef.previewIamge(src);
+                }
+            "
+            @edit-click="
+                (rowData) => {
+                    edittingObject = rowData;
+                    title = 'Edit';
+                    isAdding = false;
+                    addAndEditDialogVisible = true;
+
+                    formItemPropsList?.forEach((item) => {
+                        ruleForm[item.prop] = rowData[item.prop];
+                    });
+                }
+            "
+            @delete-click="
+                (rowData) => {
+                    // deletingObject = rowData;
+                    deleteDialog.show();
+                }
+            "
+        />
+    </Table>
+
+    <ConfirmDialog ref="deleteDialog" confirm-text="" title="Delete" />
 </template>

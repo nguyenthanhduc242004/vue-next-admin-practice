@@ -5,7 +5,19 @@ import type { FormInstance, FormRules } from 'element-plus';
 import Table from '@/components/Table.vue';
 import type { FormItemProps } from '@/components/FormItem.vue';
 import type { TableColumnProps } from '@/components/TableColumn.vue';
-import { BE_URL, createEmptyRuleForm, imagePlaceholder, type GenerateFormInterface } from '@/utils';
+import {
+    addOrEditData,
+    BE_URL,
+    createEmptyRuleForm,
+    deleteData,
+    imagePlaceholder,
+    isEmptyObject,
+    type GenerateFormInterface,
+} from '@/utils';
+import ConfirmDialog from '@/components/ConfirmDialog.vue';
+import TableColumn from '@/components/TableColumn.vue';
+import FormDialog from '@/components/FormDialog.vue';
+import FormItem from '@/components/FormItem.vue';
 
 const tableColumnPropsList: TableColumnProps[] = [
     {
@@ -94,15 +106,11 @@ const formItemPropsList: FormItemProps[] = [
 ];
 
 const tableRef = ref();
-const tableData = ref([]);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const deletingObject = ref<any>({});
-
-// Search
+const deleteDialog = ref();
+const addOrEditDialog = ref();
+const deletingId = ref<string | number | null>(null);
 const searchInput = ref('');
 const searchedString = ref('');
-
-// Form
 type RuleForm = GenerateFormInterface<typeof formItemPropsList>;
 const ruleForm = reactive<RuleForm>(createEmptyRuleForm(formItemPropsList));
 const formRules = reactive<FormRules<RuleForm>>({
@@ -121,7 +129,6 @@ const formRules = reactive<FormRules<RuleForm>>({
     ],
     Role: [{ max: 50, message: 'Length should be under 50', trigger: 'change' }],
 });
-const ruleFormRef = ref<FormInstance>();
 
 // Perform search when input is empty
 watch(searchInput, () => {
@@ -147,21 +154,127 @@ const handleInputBtnClick = () => {
         <el-button @click="handleInputBtnClick" type="primary" :icon="Search" class="search-btn"
             >Search</el-button
         >
-        <el-button @click="tableRef?.openAddModal" type="success" :icon="FolderAdd">Add</el-button>
+        <el-button
+            @click="
+                () => {
+                    addOrEditDialog.setVisible(true);
+                    addOrEditDialog.setTitle('Add');
+                    if (!isEmptyObject(addOrEditDialog.getEdittingObject())) {
+                        addOrEditDialog.clearRuleForm();
+                        addOrEditDialog.setEdittingObject({});
+                    }
+                }
+            "
+            type="success"
+            :icon="FolderAdd"
+            >Add</el-button
+        >
     </div>
 
-    <Table
-        ref="tableRef"
-        :table-data="tableData"
-        :table-column-props-list="tableColumnPropsList"
-        :api="BE_URL + '/api/staff'"
-        :form-item-props-list="formItemPropsList"
-        v-model:rule-form="ruleForm"
-        v-model:deleting-object="deletingObject"
-        :form-rules="formRules"
-        v-model:rule-form-ref="ruleFormRef"
-        :searched-string="searchedString"
-        :delete-confirm-text="`This operation will permanently delete the Staff Name: ${deletingObject?.Name}. Do you want to continue?`"
-        has-pagination
+    <Table ref="tableRef" :api="BE_URL + '/api/staff'" :searched-string="searchedString">
+        <TableColumn
+            v-for="(item, index) in tableColumnPropsList"
+            :key="index"
+            :type="item.type"
+            :prop="item.prop"
+            :label="item.label"
+            :image-width="item.imageWidth"
+            :image-height="item.imageHeight"
+            :imageFit="item.imageFit"
+            :imagePlaceholder="item.imagePlaceholder"
+            :active-text="item.activeText"
+            :inactive-text="item.inactiveText"
+            @image-click="
+                (src) => {
+                    tableRef.previewImage(src);
+                }
+            "
+            @edit-click="
+                (rowData) => {
+                    addOrEditDialog.setVisible(true);
+                    addOrEditDialog.setTitle('Edit');
+                    addOrEditDialog.setRuleForm(rowData);
+                    addOrEditDialog.setEdittingObject(rowData);
+                }
+            "
+            @delete-click="
+                (rowData) => {
+                    deleteDialog.setConfirmText(
+                        `This operation will permanently delete the Staff Name: ${rowData?.Name}. Do you want to continue?`,
+                    );
+                    deleteDialog.setVisible(true);
+                    deletingId = rowData.ID;
+                }
+            "
+        />
+    </Table>
+
+    <!-- Delete dialog -->
+    <ConfirmDialog
+        ref="deleteDialog"
+        title="Delete"
+        @confirm="
+            () => {
+                deleteData(
+                    deletingId!,
+                    BE_URL + `/api/staff`,
+                    () => {
+                        tableRef.getPageData();
+                    },
+                    () => {
+                        tableRef.setLoading(false);
+                        deleteDialog.setVisible(false);
+                        deletingId = null;
+                    },
+                );
+            }
+        "
     />
+
+    <!-- Add dialog -->
+    <FormDialog
+        ref="addOrEditDialog"
+        :form-item-props-list="formItemPropsList"
+        :rule-form="ruleForm"
+        :form-rules="formRules"
+        @submit="
+            () => {
+                addOrEditData(
+                    addOrEditDialog.getEdittingObject().ID,
+                    ruleForm,
+                    !isEmptyObject(addOrEditDialog.getEdittingObject()),
+                    true,
+                    BE_URL + `/api/staff`,
+                    () => {
+                        tableRef.getPageData();
+                    },
+                    () => {
+                        tableRef.setLoading(false);
+                        addOrEditDialog.clearRuleForm();
+                        addOrEditDialog.setEdittingObject({});
+                        addOrEditDialog.setVisible(false);
+                    },
+                );
+            }
+        "
+    >
+        <FormItem
+            v-for="(item, index) in formItemPropsList"
+            :key="index"
+            v-model:form-item-value="ruleForm[item.prop]"
+            :type="item.type"
+            :prop="item.prop"
+            :label="item.label"
+            :placeholder="item.placeholder"
+            :image-fit="item.imageFit"
+            :image-placeholder="item.imagePlaceholder"
+            :active-text="item.activeText"
+            :inactive-text="item.inactiveText"
+            @image-click="
+                (formItemValue) => {
+                    tableRef.previewImage(formItemValue);
+                }
+            "
+        />
+    </FormDialog>
 </template>
