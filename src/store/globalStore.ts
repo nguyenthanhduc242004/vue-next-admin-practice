@@ -1,5 +1,4 @@
 import { defineStore } from 'pinia';
-import { House, Setting, List } from '@element-plus/icons-vue';
 import { ref } from 'vue';
 
 export const useGlobalStore = defineStore('global', () => {
